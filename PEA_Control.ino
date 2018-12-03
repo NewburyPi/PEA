@@ -5,6 +5,8 @@
  *  - Push to start a one hour cycle of agitation
  *  - Push again to halt agitation and return to horizontal
  *  
+ *  Should have a beeper to notify end of cycle
+ *  
 */
 
 #include <Adafruit_SoftServo.h>  // SoftwareServo (works on non PWM pins)
@@ -18,6 +20,8 @@
 #define UPPER 179     // The maximum servo angle
 #define LEVEL 90      // Angle at which the agitator table is horizontal
 
+#define ETCH_TIME 3600000/2    // number of millisecond pairs 
+
 Adafruit_SoftServo PEAServo;  // create servo object to control the agitator 
 
 int servoDirection = 1;               // Direction servo movement
@@ -27,7 +31,7 @@ int target;                           //
 int debounce;                         // added to debounce the button
 int pushed;
 int servoPos = LEVEL;  // configure initial servo position in shaddow reg
-
+int tick;
 void setup() {
   // Set up the interrupt that will refresh the servo for us automagically
   OCR0A = 0xAF;            // any number is OK
@@ -51,7 +55,11 @@ void setup() {
 }
 
 void loop() {
-
+  if (tick-- <= 0) {
+    agitate = false;
+    target = LEVEL;      // point to rest position
+  }
+  
   if (!digitalRead(ButtonPin)){ // button has been pushed
     if (debounce <= 5) {
       debounce++;
@@ -73,6 +81,7 @@ void loop() {
       agitate = true;
       target = UPPER;  // point to top position
       servoDirection = 1;  // move towards top 
+      tick = ETCH_TIME;
     }
     pushed = false;
     delay(500);  // make sure you dont see another push too soon.
