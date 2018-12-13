@@ -15,9 +15,8 @@
 #define ButtonPin 2   // The pin used to read the push button
 #define LEDPin 3      // HID
 
-#define SPEED 10      // Speed of Servo movement (seconds/cycle)
 #define LOWER 0       // The minimum servo angle
-#define UPPER 179     // The maximum servo angle
+#define UPPER 170     // The maximum servo angle
 #define LEVEL 90      // Angle at which the agitator table is horizontal
 
 #define ETCH_TIME 3600000/2    // number of millisecond pairs 
@@ -55,11 +54,11 @@ void setup() {
 }
 
 void loop() {
-  if (tick-- <= 0) {
-    agitate = false;
-    target = LEVEL;      // point to rest position
-  }
-  
+//  if (tick-- <= 0) {
+//    agitate = false;
+//    target = LEVEL;      // point to rest position
+//  }
+//  
   if (!digitalRead(ButtonPin)){ // button has been pushed
     if (debounce <= 5) {
       debounce++;
@@ -89,13 +88,13 @@ void loop() {
     }
   
   if (agitate) {    // Check for out of limits condition and direction to target
-    if (servoPos >= 179) {
-      target = 0;
+    if (servoPos >= UPPER) {
+      target = LOWER;
       servoDirection = -1;  // move towards bottom
       digitalWrite(4, LOW);
     }
-    if (servoPos <= 0) {
-      target = 179;
+    if (servoPos <= LOWER) {
+      target = UPPER;
       servoDirection = 1;  // move towards top
       digitalWrite(4, HIGH);
     } 
@@ -115,7 +114,7 @@ void loop() {
     servoPos = servoPos + servoDirection;
     PEAServo.write(servoPos); 
 //    digitalWrite(0, HIGH);
-    delay(16);
+    delay(25);
 //    digitalWrite(0, LOW);
   } 
 }
