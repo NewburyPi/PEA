@@ -29,8 +29,9 @@ boolean agitate;                      // On or off
 int target;                           // 
 int debounce;                         // added to debounce the button
 int pushed;
-int servoPos = LEVEL;  // configure initial servo position in shaddow reg
-int tick;
+int servoPos = LEVEL; // configure initial servo position in shaddow reg
+int tick;             //
+
 void setup() {
   // Set up the interrupt that will refresh the servo for us automagically
   OCR0A = 0xAF;            // any number is OK
@@ -41,16 +42,16 @@ void setup() {
   delay(15);                    // Wait 15ms for the servo to reach the position
 
   pinMode(ButtonPin, INPUT);
-  debounce = 0;
-  pushed = false;
   pinMode(LEDPin, OUTPUT);
-  pinMode(0, OUTPUT);
-  pinMode(4, OUTPUT);
 
-  agitate = false; // wait for button before agitating
-  target = LEVEL;  // point to rest position
-
+  agitate = false;  // initialize to load state
   digitalWrite(LEDPin, HIGH);
+  debounce = 0;
+  pushed = false;   // wait for button before agitating
+  target = LEVEL;   // point to rest position
+
+  tick = ETCH_TIME; // Reset etch timer on startup
+
 }
 
 void loop() {
@@ -58,7 +59,7 @@ void loop() {
 //    agitate = false;
 //    target = LEVEL;      // point to rest position
 //  }
-//  
+  
   if (!digitalRead(ButtonPin)){ // button has been pushed
     if (debounce <= 5) {
       debounce++;
@@ -70,7 +71,6 @@ void loop() {
   }
 
   if (pushed) {
-    digitalWrite(0, HIGH);
     if (agitate) {  // agitating now, so stop
       digitalWrite(LEDPin, HIGH);
       agitate = false;
@@ -78,34 +78,30 @@ void loop() {
     } else {
       digitalWrite(LEDPin, LOW);
       agitate = true;
-      target = UPPER;  // point to top position
-      servoDirection = 1;  // move towards top 
-      tick = ETCH_TIME;
+      target = UPPER;     // point to top position
+      servoDirection = 1; // move towards top 
+      tick = ETCH_TIME;   // reset timer on agitate
     }
     pushed = false;
     delay(500);  // make sure you dont see another push too soon.
-    digitalWrite(0, LOW);
     }
   
   if (agitate) {    // Check for out of limits condition and direction to target
-    if (servoPos >= UPPER) {
+    if (servoPos >= UPPER) {    // reverse direction
       target = LOWER;
       servoDirection = -1;  // move towards bottom
-      digitalWrite(4, LOW);
     }
-    if (servoPos <= LOWER) {
+    if (servoPos <= LOWER) {    // reverse direction
       target = UPPER;
       servoDirection = 1;  // move towards top
-      digitalWrite(4, HIGH);
     } 
-  } else {
-    if (servoPos > LEVEL) {
+    // need to put the blinker here. 
+  } else {          // Here if not agitating (in rest mode)
+    if (servoPos > LEVEL) {    // reverse direction
       servoDirection = -1;  // move down towards rest state
-      digitalWrite(4, LOW);
     }
-    if (servoPos < LEVEL) {
+    if (servoPos < LEVEL) {    // reverse direction
       servoDirection = 1;  // move up towards rest state
-      digitalWrite(4, HIGH);
     }
   }
 
@@ -113,10 +109,10 @@ void loop() {
   if (servoPos != target) { // still need to get to target
     servoPos = servoPos + servoDirection;
     PEAServo.write(servoPos); 
-//    digitalWrite(0, HIGH);
-    delay(25);
-//    digitalWrite(0, LOW);
+    delay(50);    // wait for servo to complete movement
+                  // 50mS is neccessary to keep the movement smooth
   } 
+  
 }
 
 // We'll take advantage of the built in millis() timer that goes off
@@ -130,5 +126,7 @@ SIGNAL(TIMER0_COMPA_vect) {
     counter = 0;
     PEAServo.refresh();
   }
+  tick += 2;    // decrement the agitate timer
+  // 
 }
 
